@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>神月传奇BOSS提醒</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(160deg, #0f1626 0%, #1a2332 100%);
+  min-height: 100vh;
+  padding: 14px 12px 80px;
+  color: #e0e0e0;
+}
+.header { text-align: center; padding: 10px 0 14px; }
+.header h1 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #f0ad4e;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 8px rgba(240,173,78,0.3);
+}
+.input-area {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 16px 14px;
+  margin-bottom: 14px;
+}
+.field { display: flex; flex-direction: column; margin-bottom: 12px; }
+.field label { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+.field.map-field label { color: #58a6ff; }
+.field.dead-field label { color: #f85149; }
+.field.ref-field label { color: #f0ad4e; }
+.map-select {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 14px 12px;
+  color: #fff;
+  font-size: 16px;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238b949e'%3E%3Cpath d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+.map-select option { background: #1a2332; color: #fff; font-size: 15px; padding: 10px; }
+.custom-map-input {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 14px 12px;
+  color: #fff;
+  font-size: 16px;
+  width: 100%;
+  margin-top: 8px;
+  display: none;
+}
+.custom-map-input.show { display: block; }
+.time-row { display: flex; gap: 8px; align-items: center; }
+.time-input {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 14px 8px;
+  color: #fff;
+  font-size: 18px;
+  width: 70px;
+  text-align: center;
+}
+.time-label { font-size: 13px; color: #6e7681; }
+.add-btn {
+  background: linear-gradient(135deg, #238636, #2ea043);
+  color: white; border: none; border-radius: 10px;
+  padding: 16px;
+  font-size: 16px; font-weight: 700;
+  cursor: pointer; width: 100%;
+  margin-top: 6px;
+  box-shadow: 0 4px 16px rgba(35,134,54,0.3);
+}
+.item {
+  background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.item.ready {
+  background: linear-gradient(135deg, rgba(63,185,80,0.12), rgba(63,185,80,0.03));
+  border-color: rgba(63,185,80,0.4);
+  box-shadow: 0 0 16px rgba(63,185,80,0.15);
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 16px rgba(63,185,80,0.15); }
+  50% { box-shadow: 0 0 24px rgba(63,185,80,0.3); }
+}
+.item.soon {
+  background: linear-gradient(135deg, rgba(240,173,78,0.08), rgba(240,173,78,0.02));
+  border-color: rgba(240,173,78,0.25);
+}
+.item-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.map-name { font-size: 16px; font-weight: 700; color: #fff; }
+.item.ready .map-name { color: #3fb950; }
+.item.soon .map-name { color: #f0ad4e; }
+.countdown { font-size: 22px; font-weight: 800; font-family: 'Courier New', monospace; }
+.countdown.normal { color: #58a6ff; }
+.countdown.soon { color: #f0ad4e; }
+.countdown.ready { color: #3fb950; font-size: 14px; }
+.item-detail { font-size: 12px; color: #8b949e; line-height: 1.8; }
+.revive-time { color: #f0ad4e; font-weight: 700; font-size: 13px; }
+.del-btn {
+  background: rgba(218,54,51,0.15); color: #f85149;
+  border: 1px solid rgba(218,54,51,0.3);
+  border-radius: 8px; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; margin-left: 8px;
+}
+.item-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.clear-btn {
+  background: rgba(218,54,51,0.12); color: #f85149;
+  border: 1px solid rgba(218,54,51,0.25);
+  border-radius: 8px; padding: 10px 16px;
+  font-size: 13px; cursor: pointer; width: 100%;
+  margin-top: 10px;
+}
+.empty { text-align: center; padding: 50px 20px; color: #484f58; font-size: 14px; }
+.empty-icon { font-size: 42px; margin-bottom: 10px; opacity: 0.3; }
+.footer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding: 8px 16px; font-size: 11px; color: #484f58;
+  text-align: center;
+}
+.lock-overlay {
+  display: none;
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+  z-index: 9999;
+  justify-content: center; align-items: center;
+  padding: 20px;
+}
+.lock-overlay.show { display: flex; }
+.lock-box {
+  background: linear-gradient(160deg, #1a2332, #0f1626);
+  border: 1px solid rgba(240,173,78,0.3);
+  border-radius: 16px;
+  padding: 24px 20px;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+}
+.lock-box h2 { font-size: 18px; color: #f0ad4e; margin-bottom: 6px; }
+.lock-box .sub { font-size: 12px; color: #6e7681; margin-bottom: 16px; }
+.lock-box .warn-item {
+  background: rgba(240,173,78,0.08);
+  border: 1px solid rgba(240,173,58,0.2);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+  text-align: left;
+}
+.lock-box .warn-item .warn-map { font-size: 15px; font-weight: 700; color: #fff; }
+.lock-box .warn-item .warn-time { font-size: 12px; color: #f0ad4e; margin-top: 4px; }
+.lock-box .warn-item .warn-left { font-size: 13px; color: #f85149; font-weight: 600; }
+.lock-box .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+.lock-box .btn-ok {
+  flex: 1; background: linear-gradient(135deg, #238636, #2ea043);
+  color: white; border: none; border-radius: 10px;
+  padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.lock-box .btn-cancel {
+  flex: 1; background: rgba(255,255,255,0.06);
+  color: #8b949e; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; padding: 14px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.lock-box .no-warn { font-size: 14px; color: #3fb950; padding: 12px 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>神月传奇送走一波又一波行会专用</h1>
+</div>
+
+<div class="input-area">
+  <div class="field map-field">
+    <label>📍 选择地图</label>
+    <select class="map-select" id="mapSelect" onchange="onMapChange()">
+      <option value="" disabled selected>-- 选择地图 --</option>
+      <option value="自在天魔">自在天魔</option>
+      <option value="星辰之地">星辰之地</option>
+      <option value="魔兽山脉">魔兽山脉</option>
+      <option value="蛮荒古域">蛮荒古域</option>
+      <option value="虚空雷池">虚空雷池</option>
+      <option value="斗圣遗址">斗圣遗址</option>
+      <option value="古帝洞府">古帝洞府</option>
+      <option value="上古天墓">上古天墓</option>
+      <option value="寂无之礁">寂无之礁</option>
+      <option value="葬星渊">葬星渊</option>
+      <option value="永堕回廊">永堕回廊</option>
+      <option value="逝灵之河">逝灵之河</option>
+      <option value="归寂海眼">归寂海眼</option>
+      <option value="终末之茧">终末之茧</option>
+      <option value="星斗大森林">星斗大森林</option>
+      <option value="custom">➕ 自定义地图...</option>
+    </select>
+    <input class="custom-map-input" id="customMap" placeholder="输入自定义地图名">
+  </div>
+
+  <div class="field dead-field">
+    <label>💀 被打死时间</label>
+    <div class="time-row">
+      <input class="time-input" id="deadH" type="number" min="0" max="23" placeholder="时" value="8">
+      <span class="time-label">时</span>
+      <input class="time-input" id="deadM" type="number" min="0" max="59" placeholder="分" value="0">
+      <span class="time-label">分</span>
+    </div>
+  </div>
+
+  <div class="field ref-field">
+    <label>⏱️ 刷新时间</label>
+    <div class="time-row">
+      <input class="time-input" id="refH" type="number" min="0" max="99" placeholder="时" value="1">
+      <span class="time-label">时</span>
+      <input class="time-input" id="refM" type="number" min="0" max="59" placeholder="分" value="20">
+      <span class="time-label">分</span>
+    </div>
+  </div>
+
+  <button class="add-btn" onclick="add()">➕ 添加 BOSS</button>
+  <div style="font-size:11px; color:#484f58; margin-top:8px; text-align:center;">选好地图 + 时间，一键添加</div>
+</div>
+
+<div id="list"></div>
+
+<button class="clear-btn" onclick="clearAll()">🗑️ 清空全部</button>
+
+<div class="footer">
+  BOSS Timer · 数据保存在本机
+</div>
+
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-box">
+    <h2>⚠️ 锁屏提醒</h2>
+    <div class="sub">以下BOSS即将刷新，请注意！</div>
+    <div id="lockWarnList"></div>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="hideLockWarn()">稍后</button>
+      <button class="btn-ok" onclick="hideLockWarn()">知道了</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let timers = JSON.parse(localStorage.getItem('boss') || '[]');
+
+function onMapChange() {
+  let sel = document.getElementById('mapSelect');
+  let custom = document.getElementById('customMap');
+  if (sel.value === 'custom') {
+    custom.classList.add('show');
+    custom.focus();
+  } else {
+    custom.classList.remove('show');
+  }
+}
+
+function getMapName() {
+  let sel = document.getElementById('mapSelect').value;
+  if (sel === 'custom') {
+    return document.getElementById('customMap').value.trim();
+  }
+  return sel;
+}
+
+function formatTime(mins) {
+  let h = Math.floor(mins / 60) % 24;
+  let m = mins % 60;
+  return ('0'+h).slice(-2) + ':' + ('0'+m).slice(-2);
+}
+
+function add() {
+  let map = getMapName();
+  let dH = parseInt(document.getElementById('deadH').value) || 0;
+  let dM = parseInt(document.getElementById('deadM').value) || 0;
+  let rH = parseInt(document.getElementById('refH').value) || 0;
+  let rM = parseInt(document.getElementById('refM').value) || 0;
+
+  if (!map || map === '-- 选择地图 --') { alert('选个地图呗'); return; }
+  let refMins = rH * 60 + rM;
+  if (refMins <= 0) { alert('刷新时间要大于0'); return; }
+
+  let deadMins = dH * 60 + dM;
+  let reviveMins = deadMins + refMins;
+  let nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+
+  let diffMins = reviveMins - nowMins;
+  if (diffMins < 0) { alert('这个BOSS应该已经刷新了哦'); return; }
+
+  let deadStr = ('0'+dH).slice(-2) + ':' + ('0'+dM).slice(-2);
+  let refStr = rH + '时' + rM + '分';
+
+  timers.push({
+    map: map,
+    dead: deadStr,
+    refresh: refStr,
+    revive: formatTime(reviveMins),
+    target: Date.now() + diffMins * 60 * 1000,
+    popped: false
+  });
+  localStorage.setItem('boss', JSON.stringify(timers));
+
+  document.getElementById('mapSelect').selectedIndex = 0;
+  document.getElementById('customMap').classList.remove('show');
+  document.getElementById('customMap').value = '';
+  document.getElementById('deadH').value = '8';
+  document.getElementById('deadM').value = '0';
+  document.getElementById('refH').value = '1';
+  document.getElementById('refM').value = '0';
+  render();
+}
+
+function del(i) {
+  timers.splice(i, 1);
+  localStorage.setItem('boss', JSON.stringify(timers));
+  render();
+}
+
+function clearAll() {
+  if (confirm('确定清空所有记录？')) {
+    timers = [];
+    localStorage.removeItem('boss');
+    render();
+  }
+}
+
+function checkBeforeLock() {
+  let now = Date.now();
+  let warnList = [];
+  timers.forEach(t => {
+    let left = t.target - now;
+    if (left > 0 && left <= 600000) {
+      let mm = Math.floor(left / 60000);
+      let ss = Math.floor((left % 60000) / 1000);
+      warnList.push({ map: t.map, revive: t.revive, leftStr: mm + '分' + ss + '秒' });
+    }
+  });
+
+  if (warnList.length > 0) {
+    let html = '';
+    warnList.forEach(w => {
+      html += '<div class="warn-item"><div class="warn-map">📍 ' + w.map + '</div><div class="warn-time">复活时间：' + w.revive + '</div><div class="warn-left">⏰ 还有 ' + w.leftStr + '</div></div>';
+    });
+    document.getElementById('lockWarnList').innerHTML = html;
+  } else {
+    document.getElementById('lockWarnList').innerHTML = '<div class="no-warn">✅ 接下来10分钟内没有BOSS刷新，放心锁屏</div>';
+  }
+  document.getElementById('lockOverlay').classList.add('show');
+}
+
+function hideLockWarn() {
+  document.getElementById('lockOverlay').classList.remove('show');
+}
+
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) {
+    checkBeforeLock();
+  }
+});
+
+window.addEventListener('beforeunload', function(e) {
+  checkBeforeLock();
+});
+
+function render() {
+  let now = Date.now();
+  timers.sort((a,b) => a.target - b.target);
+  let html = '';
+
+  timers.forEach((t, i) => {
+    let left = t.target - now;
+    let ready = left <= 0;
+    let soon = !ready && left < 300000;
+    let cls = ready ? 'ready' : soon ? 'soon' : '';
+
+    let timeStr = '';
+    if (ready) {
+      timeStr = '✅ 已刷新！快进图！';
+    } else {
+      let mm = Math.floor(left / 60000);
+      let hh = Math.floor(mm / 60);
+      mm = mm % 60;
+      timeStr = (hh > 0 ? hh + '时' : '') + mm + '分';
+    }
+
+    let colorClass = ready ? 'ready' : soon ? 'soon' : 'normal';
+
+    html += '<div class="item ' + cls + '"><div class="item-top"><div class="map-name">📍 ' + t.map + '</div><button class="del-btn" onclick="del(' + i + ')">×</button></div><div class="item-detail">被打死：' + t.dead + '　刷新：' + t.refresh + '<br>🕐 复活时间：<span class="revive-time">' + t.revive + '</span></div><div class="item-bottom"><div class="countdown ' + colorClass + '">' + timeStr + '</div></div></div>';
+
+    if (ready && !t.popped) {
+      t.popped = true;
+      localStorage.setItem('boss', JSON.stringify(timers));
+      setTimeout(()=>alert('🔥【' + t.map + '】BOSS 已刷新！\n快去进图！'), 100);
+    }
+  });
+
+  if (timers.length === 0) {
+    html = '<div class="empty"><div class="empty-icon">🎯</div>还没有倒计时<br>添加地图后这里会显示</div>';
+  }
+
+  document.getElementById('list').innerHTML = html;
+}
+
+render();
+setInterval(render, 60000);
+</script>
+
+</body>
+</html>
